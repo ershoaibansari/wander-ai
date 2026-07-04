@@ -47,6 +47,7 @@ export function FloatingAssistant() {
         </label>
         <input
           id="assistant-question"
+          type="text"
           className="input assistant-input"
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
