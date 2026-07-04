@@ -1,32 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import dynamic from "next/dynamic";
-
-const DiscoverTool = dynamic(
-  () => import("@/components/AiTools").then((mod) => mod.DiscoverTool),
-  { ssr: false }
-);
-const EtiquetteCheckerTool = dynamic(
-  () => import("@/components/AiTools").then((mod) => mod.EtiquetteCheckerTool),
-  { ssr: false }
-);
-const SavingCheatsTool = dynamic(
-  () => import("@/components/AiTools").then((mod) => mod.SavingCheatsTool),
-  { ssr: false }
-);
-const CultureTool = dynamic(
-  () => import("@/components/AiTools").then((mod) => mod.CultureTool),
-  { ssr: false }
-);
-const PhrasesTool = dynamic(
-  () => import("@/components/AiTools").then((mod) => mod.PhrasesTool),
-  { ssr: false }
-);
-const QuizTool = dynamic(
-  () => import("@/components/AiTools").then((mod) => mod.QuizTool),
-  { ssr: false }
-);
+import {
+  DiscoverTool,
+  EtiquetteCheckerTool,
+  SavingCheatsTool,
+  CultureTool,
+  PhrasesTool,
+  QuizTool,
+} from "@/components/AiTools";
 
 const tabs = [
   { id: "discover", label: "🗺️ Discovery" },

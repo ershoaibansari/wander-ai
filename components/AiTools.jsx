@@ -111,21 +111,26 @@ export function CultureTool() {
       title="AI Cultural Companion"
       description="Learn customs, greetings, religion, traditions, dress code, photography rules, dining etiquette, gift etiquette, and what to avoid."
       fields={[["destination", "Destination", "Kyoto"]]}
-      render={(data) => (
-        <div className="space-y-6">
-          <div className="grid-auto">
-            {Object.entries(data).filter(([key]) => !["destination", "thingsToAvoid", "emergencyTips"].includes(key)).map(([key, value]) => (
-              <article key={key} className="surface p-4">
-                <h3 className="font-black capitalize">{key.replace(/([A-Z])/g, " $1")}</h3>
-                <p className="muted mt-2">{value}</p>
-              </article>
-            ))}
-            <ResultList title="Things tourists should avoid" items={(data.thingsToAvoid || []).map((name) => ({ name }))} />
-            <ResultList title="Emergency tips" items={(data.emergencyTips || []).map((name) => ({ name }))} />
+      render={(data) => {
+        const thingsToAvoid = data.thingsToAvoid || data.ThingsToAvoid || data.things_to_avoid || [];
+        const emergencyTips = data.emergencyTips || data.EmergencyTips || data.emergency_tips || [];
+        const exclude = ["destination", "thingsToAvoid", "ThingsToAvoid", "things_to_avoid", "emergencyTips", "EmergencyTips", "emergency_tips"];
+        return (
+          <div className="space-y-6">
+            <div className="grid-auto">
+              {Object.entries(data).filter(([key]) => !exclude.includes(key)).map(([key, value]) => (
+                <article key={key} className="surface p-4">
+                  <h3 className="font-black capitalize">{key.replace(/([A-Z])/g, " $1")}</h3>
+                  <p className="muted mt-2">{typeof value === "object" ? JSON.stringify(value) : String(value)}</p>
+                </article>
+              ))}
+              <ResultList title="Things tourists should avoid" items={thingsToAvoid.map((name) => typeof name === "object" ? name : { name })} />
+              <ResultList title="Emergency tips" items={emergencyTips.map((name) => typeof name === "object" ? name : { name })} />
+            </div>
+            <ClaimStampButton destination={data.destination || "this destination"} />
           </div>
-          <ClaimStampButton destination={data.destination || "this destination"} />
-        </div>
-      )}
+        );
+      }}
     />
   );
 }
@@ -148,9 +153,10 @@ export function PhrasesTool() {
                 </p>
               )}
               <div className="grid-auto">
-                {["basics", "taxi", "restaurant", "shopping", "emergency"].map((group) => (
-                  <ResultListWithSpeech key={group} title={group} items={data[group]} langCode={langCode} />
-                ))}
+                {["basics", "taxi", "restaurant", "shopping", "emergency"].map((group) => {
+                  const groupData = data[group] || data[group.charAt(0).toUpperCase() + group.slice(1)] || [];
+                  return <ResultListWithSpeech key={group} title={group} items={groupData} langCode={langCode} />;
+                })}
               </div>
             </div>
             <ClaimStampButton destination={data.destination || "this destination"} />
@@ -169,7 +175,7 @@ export function QuizTool() {
       description="Generate five destination-specific questions and learn from the explanations."
       fields={[["destination", "Destination", "Japan"]]}
       render={(data) => (
-        <QuizPlayer destination={data.destination || "this destination"} questions={data.questions || []} />
+        <QuizPlayer destination={data.destination || "this destination"} questions={data.questions || data.Questions || []} />
       )}
     />
   );
