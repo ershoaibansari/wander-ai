@@ -239,16 +239,38 @@ function AiTool({ type, title, description, fields, render }) {
 }
 
 function ResultList({ title, items = [], nameKey = "name", detailKey = "description" }) {
+  let list = [];
+  if (Array.isArray(items)) {
+    list = items;
+  } else if (items && typeof items === "object") {
+    list = Object.entries(items).map(([name, descVal]) => {
+      if (typeof descVal === "object" && descVal !== null) {
+        return {
+          [nameKey]: name,
+          [detailKey]: descVal.description || descVal.details || descVal.summary || JSON.stringify(descVal),
+        };
+      }
+      return {
+        [nameKey]: name,
+        [detailKey]: String(descVal),
+      };
+    });
+  }
+
   return (
     <section className="surface p-4">
       <h2 className="font-black capitalize">{title}</h2>
       <ul className="mt-3 space-y-3">
-        {items.map((item, index) => (
-          <li key={`${item[nameKey] || item.english || title}-${index}`}>
-            <p className="font-bold">{item[nameKey] || item.english}</p>
-            <p className="muted text-sm">{item[detailKey] || item.details || item.local || item.tip}</p>
-          </li>
-        ))}
+        {list.map((item, index) => {
+          const name = typeof item === "object" ? (item[nameKey] || item.name || item.title || item.english || "Item") : String(item);
+          const detail = typeof item === "object" ? (item[detailKey] || item.details || item.description || item.local || item.tip || "") : "";
+          return (
+            <li key={`${name}-${index}`}>
+              <p className="font-bold">{name}</p>
+              {detail && <p className="muted text-sm">{detail}</p>}
+            </li>
+          );
+        })}
       </ul>
     </section>
   );
@@ -260,6 +282,7 @@ const LANG_MAP = {
   japanese: "ja-JP",
   thai: "th-TH",
   german: "de-DE",
+  italic: "it-IT",
   italian: "it-IT",
   korean: "ko-KR",
   chinese: "zh-CN",
@@ -278,28 +301,53 @@ function ResultListWithSpeech({ title, items = [], langCode }) {
     window.speechSynthesis.speak(utterance);
   }
 
+  let list = [];
+  if (Array.isArray(items)) {
+    list = items;
+  } else if (items && typeof items === "object") {
+    list = Object.entries(items).map(([english, localVal]) => {
+      if (typeof localVal === "object" && localVal !== null) {
+        return {
+          english,
+          local: localVal.local || localVal.translation || localVal.text || String(localVal),
+          pronunciation: localVal.pronunciation || localVal.phonetic || localVal.pronounce || "",
+        };
+      }
+      return {
+        english,
+        local: String(localVal),
+        pronunciation: "",
+      };
+    });
+  }
+
   return (
     <section className="surface p-4">
       <h2 className="font-black capitalize">{title}</h2>
       <ul className="mt-3 space-y-3">
-        {(items || []).map((item, index) => (
-          <li key={`${item.english || title}-${index}`} className="flex items-start justify-between gap-2 border-b border-[var(--line)] pb-2 last:border-0 last:pb-0">
-            <div>
-              <p className="font-bold">{item.english}</p>
-              <p className="text-[var(--primary-strong)] font-semibold text-sm">{item.local}</p>
-              <p className="muted text-xs italic">&ldquo;{item.pronunciation}&rdquo;</p>
-            </div>
-            <button
-              onClick={() => speak(item.local || item.english)}
-              className="btn-secondary rounded-full p-2 flex items-center justify-center min-h-[1.8rem] w-8 h-8 text-xs cursor-pointer hover:bg-[var(--primary)] hover:text-white transition-colors"
-              title="Speak phrase"
-              aria-label={`Speak ${item.english}`}
-              type="button"
-            >
-              🔊
-            </button>
-          </li>
-        ))}
+        {list.map((item, index) => {
+          const itemEng = typeof item === "object" ? (item.english || item.eng || "Phrase") : String(item);
+          const itemLocal = typeof item === "object" ? (item.local || item.translation || item.text || "") : "";
+          const itemPron = typeof item === "object" ? (item.pronunciation || item.phonetic || item.pronounce || "") : "";
+          return (
+            <li key={`${itemEng}-${index}`} className="flex items-start justify-between gap-2 border-b border-[var(--line)] pb-2 last:border-0 last:pb-0">
+              <div>
+                <p className="font-bold">{itemEng}</p>
+                {itemLocal && <p className="text-[var(--primary-strong)] font-semibold text-sm">{itemLocal}</p>}
+                {itemPron && <p className="muted text-xs italic">&ldquo;{itemPron}&rdquo;</p>}
+              </div>
+              <button
+                onClick={() => speak(itemLocal || itemEng)}
+                className="btn-secondary rounded-full p-2 flex items-center justify-center min-h-[1.8rem] w-8 h-8 text-xs cursor-pointer hover:bg-[var(--primary)] hover:text-white transition-colors"
+                title="Speak phrase"
+                aria-label={`Speak ${itemEng}`}
+                type="button"
+              >
+                🔊
+              </button>
+            </li>
+          );
+        })}
       </ul>
     </section>
   );
@@ -348,22 +396,33 @@ export function SavingCheatsTool() {
       title="Local Savings Cheat Sheet"
       description="Get 5 highly specific, non-obvious hacks to save money and avoid tourist traps at your destination."
       fields={[["destination", "Destination", "Venice"]]}
-      render={(data) => (
-        <div className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            {(data.cheats || []).map((item, index) => (
-              <article key={index} className="surface p-5 animate-fade-in">
-                <h3 className="font-black text-lg flex items-center gap-2 text-[var(--primary)]">
-                  <span className="flex items-center justify-center bg-[color-mix(in_srgb,var(--primary)_15%,transparent)] rounded-full w-8 h-8 text-sm">{index + 1}</span>
-                  {item.title}
-                </h3>
-                <p className="muted mt-3 leading-7 text-sm">{item.hack}</p>
-              </article>
-            ))}
+      render={(data) => {
+        let cheatsList = [];
+        if (Array.isArray(data.cheats)) {
+          cheatsList = data.cheats;
+        } else if (data.cheats && typeof data.cheats === "object") {
+          cheatsList = Object.entries(data.cheats).map(([title, hackVal]) => ({
+            title,
+            hack: typeof hackVal === "object" ? (hackVal.hack || hackVal.description || JSON.stringify(hackVal)) : String(hackVal)
+          }));
+        }
+        return (
+          <div className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              {cheatsList.map((item, index) => (
+                <article key={index} className="surface p-5 animate-fade-in">
+                  <h3 className="font-black text-lg flex items-center gap-2 text-[var(--primary)]">
+                    <span className="flex items-center justify-center bg-[color-mix(in_srgb,var(--primary)_15%,transparent)] rounded-full w-8 h-8 text-sm">{index + 1}</span>
+                    {item.title}
+                  </h3>
+                  <p className="muted mt-3 leading-7 text-sm">{item.hack}</p>
+                </article>
+              ))}
+            </div>
+            <ClaimStampButton destination={data.destination || "this destination"} />
           </div>
-          <ClaimStampButton destination={data.destination || "this destination"} />
-        </div>
-      )}
+        );
+      }}
     />
   );
 }
