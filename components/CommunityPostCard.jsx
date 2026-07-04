@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatDate } from "@/lib/utils";
 
 export function CommunityPostCard({ post }) {
@@ -10,13 +10,27 @@ export function CommunityPostCard({ post }) {
   const [bookmarked, setBookmarked] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
-  const [comments, setComments] = useState([
-    {
-      id: `${post.id}-starter-comment`,
-      author: "WanderAI",
-      text: "Thanks for sharing a culture-first travel tip.",
-    },
-  ]);
+  const [comments, setComments] = useState([]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem(`comments-${post.id}`);
+    const list = saved ? (() => {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return [];
+      }
+    })() : [
+      {
+        id: `${post.id}-starter-comment`,
+        author: "WanderAI",
+        text: "Thanks for sharing a culture-first travel tip.",
+      },
+    ];
+
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setComments(list);
+  }, [post.id]);
 
   function toggleLike() {
     setLiked((value) => !value);
@@ -27,14 +41,14 @@ export function CommunityPostCard({ post }) {
     event.preventDefault();
     const text = commentText.trim();
     if (!text) return;
-    setComments((items) => [
-      ...items,
-      {
-        id: `${post.id}-${Date.now()}`,
-        author: "You",
-        text,
-      },
-    ]);
+    const newComment = {
+      id: `${post.id}-${Date.now()}`,
+      author: "You",
+      text,
+    };
+    const updated = [...comments, newComment];
+    setComments(updated);
+    localStorage.setItem(`comments-${post.id}`, JSON.stringify(updated));
     setCommentText("");
     setCommentsOpen(true);
   }

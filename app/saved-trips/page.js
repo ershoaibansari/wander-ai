@@ -1,11 +1,11 @@
 import { AppShell } from "@/components/AppShell";
-import { getDemoDashboard } from "@/components/Dashboard";
+import { getDashboardData } from "@/lib/db";
 import { TripList } from "@/components/Lists";
 import { auth } from "@/session/auth";
 
 export default async function SavedTripsPage() {
   const session = await auth();
-  const data = getDemoDashboard(session?.user?.id);
+  const data = await getDashboardData(session?.user?.id);
   return (
     <AppShell>
       <PageIntro title="Saved Trips" body="Your saved cultural trip ideas and Gemini recommendations." />

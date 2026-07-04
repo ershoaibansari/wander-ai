@@ -12,7 +12,9 @@ export function getDemoDashboard(userId = "demo-emily") {
     passport: user.passportStamps,
     badges: user.badges.map((badgeId) => BADGE_CATALOG[badgeId]).filter(Boolean),
     quizResults: user.quizResults,
-    communityPosts: getDemoCommunityPosts(),
+    get communityPosts() {
+      return getDemoCommunityPosts();
+    },
   };
 }
 
@@ -74,12 +76,15 @@ export function DashboardView({ data }) {
           ))}
         </Panel>
         <Panel title="Recent searches">
-          {data.savedTrips.map((trip) => (
-            <li key={trip.id} className="surface p-3">
-              <p className="font-bold">{trip.destination}</p>
-              <p className="muted text-sm">{formatDate(trip.createdAt)}</p>
-            </li>
-          ))}
+          {data.savedTrips.map((trip) => {
+            const destName = typeof trip.destination === "object" ? (trip.destination.name || trip.destination.destination) : trip.destination;
+            return (
+              <li key={trip.id} className="surface p-3">
+                <p className="font-bold">{destName}</p>
+                <p className="muted text-sm">{formatDate(trip.createdAt)}</p>
+              </li>
+            );
+          })}
         </Panel>
       </section>
     </div>

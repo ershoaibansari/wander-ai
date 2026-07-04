@@ -3,7 +3,11 @@ import { auth } from "@/session/auth";
 import { APP_TAGLINE } from "@/lib/constants";
 import { BrandBadges, Footer, Logo } from "@/components/Brand";
 import { ExitDemoButton } from "@/components/ExitDemoButton";
-import { FloatingAssistant } from "@/components/FloatingAssistant";
+import dynamic from "next/dynamic";
+
+const FloatingAssistant = dynamic(
+  () => import("@/components/FloatingAssistant").then((mod) => mod.FloatingAssistant)
+);
 
 const navItems = [
   ["Dashboard", "/dashboard"],
