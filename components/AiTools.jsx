@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { LOADING_MESSAGES } from "@/lib/constants";
 
+import { fallbackQuiz, fallbackItinerary } from "@/lib/fallback-content";
+
 const endpoints = {
   discover: "/api/discover",
   story: "/api/story",
@@ -72,34 +74,85 @@ export function ItineraryTool() {
         ["walkingPreference", "Walking preference", "High"],
         ["interests", "Travel interests", "Food, markets, heritage"],
       ]}
-      render={(data) => (
-        <div className="space-y-6">
-          <div className="grid-auto">
-            {["morning", "afternoon", "evening", "night"].map((part) => {
-              const partData = data[part] || data[part.charAt(0).toUpperCase() + part.slice(1)];
-              const title = partData?.title || partData?.Title || partData?.name || partData?.Name || "";
-              const plan = partData?.plan || partData?.Plan || partData?.description || partData?.Description || "";
-              const cost = partData?.estimatedCost || partData?.EstimatedCost || partData?.cost || partData?.Cost || "";
-              return (
-                <article key={part} className="surface p-5">
-                  <p className="kicker">{part}</p>
-                  <h3 className="mt-2 font-black">{title}</h3>
-                  <p className="muted mt-2">{plan}</p>
-                  <p className="mt-3 font-bold">{cost}</p>
+      render={(data) => {
+        // Lift up nested itinerary object if present
+        let schedule = data;
+        if (data && typeof data === "object") {
+          const nested = data.itinerary || data.Itinerary || data.schedule || data.Schedule || data.day || data.Day || data.plan || data.Plan || data.activities || data.Activities;
+          if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+            schedule = { ...data, ...nested };
+          }
+        }
+
+        // Defensively resolve part data
+        const parts = ["morning", "afternoon", "evening", "night"];
+        const resolvedParts = parts.map((part) => {
+          let partData = schedule[part] || schedule[part.charAt(0).toUpperCase() + part.slice(1)];
+          
+          // If still not found, search inside the object keys case-insensitively
+          if (!partData && schedule && typeof schedule === "object") {
+            const foundKey = Object.keys(schedule).find(k => k.toLowerCase() === part);
+            if (foundKey) {
+              partData = schedule[foundKey];
+            }
+          }
+
+          // If still not found and schedule is an array or contains an array of activities
+          if (!partData) {
+            const arr = Array.isArray(schedule) ? schedule : (Array.isArray(data.activities) ? data.activities : (Array.isArray(data.itinerary) ? data.itinerary : null));
+            if (arr) {
+              const matched = arr.find(item => {
+                const label = String(item.time || item.timeOfDay || item.period || item.part || item.title || "").toLowerCase();
+                return label.includes(part);
+              });
+              if (matched) {
+                partData = matched;
+              }
+            }
+          }
+
+          const title = partData?.title || partData?.Title || partData?.name || partData?.Name || partData?.activity || "";
+          const plan = partData?.plan || partData?.Plan || partData?.description || partData?.Description || partData?.details || partData?.Details || "";
+          const cost = partData?.estimatedCost || partData?.EstimatedCost || partData?.cost || partData?.Cost || "";
+
+          return { part, title, plan, cost };
+        });
+
+        // Failsafe: if all resolved parts have empty title and plan, fall back to offline fallbackItinerary
+        const hasContent = resolvedParts.some(p => p.title || p.plan);
+        const finalParts = hasContent ? resolvedParts : parts.map(part => {
+          const fb = fallbackItinerary({ destination: data.destination || "India" })[part];
+          return {
+            part,
+            title: fb?.title || "",
+            plan: fb?.plan || "",
+            cost: fb?.estimatedCost || ""
+          };
+        });
+
+        return (
+          <div className="space-y-6">
+            <div className="grid-auto">
+              {finalParts.map((item) => (
+                <article key={item.part} className="surface p-5">
+                  <p className="kicker">{item.part}</p>
+                  <h3 className="mt-2 font-black">{item.title}</h3>
+                  <p className="muted mt-2">{item.plan}</p>
+                  {item.cost && <p className="mt-3 font-bold">{item.cost}</p>}
                 </article>
-              );
-            })}
+              ))}
+            </div>
+            <div className="flex flex-col md:flex-row gap-4">
+              <SaveTripButton
+                destination={data.destination || "this destination"}
+                summary={data.summary || `One day custom itinerary in ${data.destination}`}
+                tags={["Itinerary", data.transportSuggestion ? "Transit" : ""].filter(Boolean)}
+              />
+              <ClaimStampButton destination={data.destination || "this destination"} />
+            </div>
           </div>
-          <div className="flex flex-col md:flex-row gap-4">
-            <SaveTripButton
-              destination={data.destination || "this destination"}
-              summary={data.summary || `One day custom itinerary in ${data.destination}`}
-              tags={["Itinerary", data.transportSuggestion ? "Transit" : ""].filter(Boolean)}
-            />
-            <ClaimStampButton destination={data.destination || "this destination"} />
-          </div>
-        </div>
-      )}
+        );
+      }}
     />
   );
 }
@@ -174,9 +227,24 @@ export function QuizTool() {
       title="AI Culture Quiz"
       description="Generate five destination-specific questions and learn from the explanations."
       fields={[["destination", "Destination", "Japan"]]}
-      render={(data) => (
-        <QuizPlayer destination={data.destination || "this destination"} questions={data.questions || data.Questions || []} />
-      )}
+      render={(data) => {
+        let qList = [];
+        if (Array.isArray(data)) {
+          qList = data;
+        } else if (data && typeof data === "object") {
+          const rawQ = data.questions || data.Questions || data.quiz || data.quizQuestions || data.questionsList;
+          if (Array.isArray(rawQ)) {
+            qList = rawQ;
+          } else if (rawQ && typeof rawQ === "object") {
+            qList = Object.values(rawQ);
+          }
+        }
+        const destination = data.destination || "this destination";
+        const finalQuestions = (qList && qList.length > 0) ? qList : fallbackQuiz(destination).questions;
+        return (
+          <QuizPlayer destination={destination} questions={finalQuestions} />
+        );
+      }}
     />
   );
 }
