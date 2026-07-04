@@ -1,7 +1,27 @@
 {
   "compilerOptions": {
     "paths": {
-      "@/*": ["./*"]
+      "@/components/*": [
+        "./components/*"
+      ],
+      "@/session/*": [
+        "./session/*"
+      ],
+      "@/constants/*": [
+        "./constants/*"
+      ],
+      "@/utils/*": [
+        "./utils/*"
+      ],
+      "@/firebase/*": [
+        "./firebase/*"
+      ],
+      "@/lib/*": [
+        "./lib/*"
+      ],
+      "@/app/*": [
+        "./app/*"
+      ]
     }
   }
 }
