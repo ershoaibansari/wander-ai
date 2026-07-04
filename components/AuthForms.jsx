@@ -15,28 +15,39 @@ export function LoginForm({ demoEnabled }) {
   async function normalLogin(event) {
     event.preventDefault();
     setError("");
-    const form = new FormData(event.currentTarget);
-    const result = await signIn("credentials", {
-      email: form.get("email"),
-      password: form.get("password"),
-      redirect: false,
-    });
-    if (result?.error) {
-      setError("Please check your email and password.");
-      return;
+    try {
+      const form = new FormData(event.currentTarget);
+      const result = await signIn("credentials", {
+        email: form.get("email"),
+        password: form.get("password"),
+        redirect: false,
+      });
+      if (result?.error) {
+        setError("Please check your email and password.");
+        return;
+      }
+      router.push("/dashboard");
+    } catch (err) {
+      console.error("[LoginForm] login failed:", err);
+      setError("An unexpected network error occurred. Please try again.");
     }
-    router.push("/dashboard");
   }
 
   async function demoLogin(demoId) {
     setLoading(demoId);
-    const result = await signIn("credentials", { demoId, redirect: false });
-    setLoading("");
-    if (result?.error) {
-      setError("Demo login is currently unavailable.");
-      return;
+    try {
+      const result = await signIn("credentials", { demoId, redirect: false });
+      if (result?.error) {
+        setError("Demo login is currently unavailable.");
+        return;
+      }
+      router.push("/dashboard");
+    } catch (err) {
+      console.error("[LoginForm] demo login failed:", err);
+      setError("An unexpected connection issue occurred.");
+    } finally {
+      setLoading("");
     }
-    router.push("/dashboard");
   }
 
   return (
@@ -125,29 +136,34 @@ export function RegisterForm() {
   async function register(event) {
     event.preventDefault();
     setMessage("");
-    const form = new FormData(event.currentTarget);
-    const response = await fetch("/api/register", {
-      method: "POST",
-      body: JSON.stringify({
-        name: form.get("name"),
+    try {
+      const form = new FormData(event.currentTarget);
+      const response = await fetch("/api/register", {
+        method: "POST",
+        body: JSON.stringify({
+          name: form.get("name"),
+          email: form.get("email"),
+          password: form.get("password"),
+          country: form.get("country"),
+          interests: form.getAll("interests"),
+          travelStyle: form.get("travelStyle"),
+          budget: form.get("budget"),
+        }),
+      });
+      if (!response.ok) {
+        setMessage("Please check the form and try again.");
+        return;
+      }
+      await signIn("credentials", {
         email: form.get("email"),
         password: form.get("password"),
-        country: form.get("country"),
-        interests: form.getAll("interests"),
-        travelStyle: form.get("travelStyle"),
-        budget: form.get("budget"),
-      }),
-    });
-    if (!response.ok) {
-      setMessage("Please check the form and try again.");
-      return;
+        redirect: false,
+      });
+      router.push("/dashboard");
+    } catch (err) {
+      console.error("[RegisterForm] registration failed:", err);
+      setMessage("A network error occurred. Please try again later.");
     }
-    await signIn("credentials", {
-      email: form.get("email"),
-      password: form.get("password"),
-      redirect: false,
-    });
-    router.push("/dashboard");
   }
 
   return (
@@ -157,7 +173,7 @@ export function RegisterForm() {
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <div>
           <label className="label" htmlFor="name">Name</label>
-          <input className="input" id="name" name="name" required />
+          <input className="input" id="name" name="name" type="text" required />
         </div>
         <div>
           <label className="label" htmlFor="register-email">Email</label>
@@ -169,7 +185,7 @@ export function RegisterForm() {
         </div>
         <div>
           <label className="label" htmlFor="country">Country</label>
-          <input className="input" id="country" name="country" required />
+          <input className="input" id="country" name="country" type="text" required />
         </div>
         <div>
           <label className="label" htmlFor="travelStyle">Preferred travel style</label>

@@ -12,14 +12,20 @@ export function FloatingAssistant() {
     event.preventDefault();
     if (!question.trim()) return;
     setLoading(true);
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: [{ role: "user", content: question }] }),
-    });
-    const payload = await response.json();
-    setAnswer(payload.reply || payload.data?.reply || payload.data || "Gemini could not answer just now.");
-    setLoading(false);
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: [{ role: "user", content: question }] }),
+      });
+      const payload = await response.json();
+      setAnswer(payload.reply || payload.data?.reply || payload.data || "Gemini could not answer just now.");
+    } catch (error) {
+      console.error("[FloatingAssistant] Request failed:", error);
+      setAnswer("Could not reach the AI assistant. Please check your connection.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (!open) {

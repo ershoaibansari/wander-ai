@@ -148,20 +148,26 @@ function AiTool({ type, title, description, fields, render }) {
     event.preventDefault();
     setError("");
     setLoading(true);
-    const form = new FormData(event.currentTarget);
-    const body = Object.fromEntries(fields.map(([name]) => [name, form.get(name)]));
-    const response = await fetch(endpoints[type], {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    const payload = await response.json();
-    setLoading(false);
-    if (!response.ok) {
-      setError(payload.error || "Gemini could not complete this request.");
-      return;
+    try {
+      const form = new FormData(event.currentTarget);
+      const body = Object.fromEntries(fields.map(([name]) => [name, form.get(name)]));
+      const response = await fetch(endpoints[type], {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        setError(payload.error || "Gemini could not complete this request.");
+        return;
+      }
+      setResult(payload.data || payload);
+    } catch (error) {
+      console.error(`[AiTool] submit ${type} failed:`, error);
+      setError("Network connection issue. Gemini could not complete this request.");
+    } finally {
+      setLoading(false);
     }
-    setResult(payload.data || payload);
   }
 
   return (
@@ -174,7 +180,7 @@ function AiTool({ type, title, description, fields, render }) {
           {fields.map(([name, label, placeholder]) => (
             <div key={name}>
               <label className="label" htmlFor={name}>{label}</label>
-              <input id={name} name={name} className="input" placeholder={placeholder} required={name === "query" || name === "destination"} />
+              <input id={name} name={name} type="text" className="input" placeholder={placeholder} required={name === "query" || name === "destination"} />
             </div>
           ))}
           <div className="md:col-span-2">

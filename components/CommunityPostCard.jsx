@@ -104,6 +104,7 @@ export function CommunityPostCard({ post }) {
               </label>
               <input
                 id={`${post.id}-comment-input`}
+                type="text"
                 className="input"
                 value={commentText}
                 onChange={(event) => setCommentText(event.target.value)}
